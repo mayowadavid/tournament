@@ -1,0 +1,380 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournament</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script src="https://code.jquery.com/jquery-3.3.1.js" integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60=" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+    <div class="flex_row filters column">
+        <div class="search_col flex_row">
+            <div class="form-group">
+                <input type="text" class="form-control" onchange="handleChange(event)" id="search" placeholder="search...">
+            </div>
+              <button onclick="searcFilter(event)">Search</button>
+        </div>
+        <div class="speed_filter form-select">
+            <p onclick="openSpeed(event)">choose Speed</p>
+            <div class="speed-check form-checker form-chk select-option" name="" id="">
+                
+            </div>
+        </div>
+        <div class="range_filter form-select">
+            <p onclick="openRange(event)">choose players</p>
+            <div class="range-checker open-range form-chk select-option" name="" id="">
+                
+            </div>
+        </div>
+        <div class="range_filter form-select">
+            <p onclick="openBuy(event)">choose Buyin</p>
+            <div class="open-buy form-chk select-option" name="" id="">
+                
+            </div>
+        </div>
+        <div class="range_filter form-select">
+            <p onclick="openGame(event)">choose Game</p>
+            <div class="open-game form-chk select-option" name="" id="">
+                
+            </div>
+        </div>
+    </div>
+    <div class="paginate-select column"></div>
+    <div class="column table-board table-responsive"></div>
+    <div class="paginate-select column"></div>
+    <script>
+    
+        let tournamentTable = [];
+        let tournamentTableCopy = [];
+        let dataIndex = 0;
+        let reduceData = [];
+        let rangeData = ["2", "3-6", "7-10"];
+        let buyData = ["5", "6-20", "21-50", "100"];
+        let gameData = ["H"];
+        let selectedBuyData = [];
+        let selectedRangeData = [];
+        let allSpeed = ["H", "N", "L", "NL", "T", "B"];
+        let selectedSpeed = [];
+        let searchValue = '';
+        let storageData = [];
+
+        const handleChange = (e) => {
+            e.preventDefault();
+            const { value } = e.target;
+            searchValue = value;
+        }
+
+        const fire = ()=> {
+            fetch('/tournament')
+                    .then(function (result) {
+                        return result.json();
+                    }).then((data)=>{ 
+                        const {RegisteringTournament} = data.Response.RegisteringTournamentsResponse[0].RegisteringTournaments[0];
+                        tournamentTable = [...RegisteringTournament];
+                        tournamentTableCopy = tournamentTable;
+                        makeTable();
+                });
+        }
+        fire();
+
+        const saveToStorage = (e, d) => {
+            e.preventDefault();
+            storageData = [...storageData, {id: d}];
+            const data = tournamentTable.filter((s)=> {
+                const {$} = s;
+                return $.id !== d;
+            });
+            tournamentTableCopy = data;
+            makeTable();
+        }
+
+        const renderPage = () => {
+            let speedRow = '';
+            let rangeRow = '';
+            let buyRow = '';
+            let gameRow = '';
+
+            allSpeed.map((s)=> {
+                speedRow += '<div class="form-check">'
+                speedRow +=  '<input onChange="handleSpeed(event)" class="form-check-input" type="checkbox" value="'+ s +'" id="flexCheckDefault">';
+                speedRow +=  '<label class="form-check-label" for="defaultCheck1">' + s + '</label> </div>';
+            });
+            speedRow += '<div class="submit_button"><button onclick="submitSpeed(event)">Done</button></div>';
+            
+            $('.speed-check').html(speedRow);
+
+            rangeData.map((r)=> {
+                rangeRow += '<div class="form-check">'
+                rangeRow +=  '<input onChange="handleRange(event)" class="form-check-input" type="checkbox" value="'+ r +'" id="'+ r +'">';
+                rangeRow +=  '<label class="form-check-label" for="defaultCheck1">' + r + ' ' + 'players'+'</label> </div>';
+            });
+            rangeRow += '<div class="submit_button"><button onclick="submitRange(event)">Done</button></div>';
+            $('.open-range').html(rangeRow);
+
+            buyData.map((r)=> {
+                buyRow += '<div class="form-check">'
+                buyRow +=  '<input onChange="handleBuy(event)" class="form-check-input" type="checkbox" value="'+ r +'" id="'+ r +'">';
+                buyRow +=  '<label class="form-check-label" for="defaultCheck1">'+ '$' + r + '</label> </div>';
+            });
+            buyRow += '<div class="submit_button"><button onclick="submitBuy(event)">Done</button></div>';
+            $('.open-buy').html(buyRow);
+
+            gameData.map((r)=> {
+                gameRow += '<div class="form-check">'
+                gameRow +=  '<input class="form-check-input" type="checkbox" value="'+ r +'" id="'+ r +'">';
+                gameRow +=  '<label class="form-check-label" for="defaultCheck1">' + r + '</label> </div>';
+            });
+            gameRow += '<div class="submit_button"><button onclick="openGame(event)">Done</button></div>';
+            $('.open-game').html(gameRow);
+            
+
+            let pagination = '';
+            pagination += '<nav><ul class="pagination justify-content-center">';
+
+            pagination += '<li class="page-item"><a href="#" onClick="prevPage(event)" class="page-link">Previous</a></li>';
+            reduceData.map((t, i)=> {
+            pagination += '<li class="page-item"><a href="#" onClick="selectPage('+ i +')" class="page-link">'+ i + 1 +'</a></li>';
+            });
+            pagination += '<li class="page-item"><a href="#" onClick="nextPage(event)" class="page-link">Next</a></li>';
+            pagination += '</ul></nav>';
+            $('.paginate-select').html(pagination);
+            console.log(reduceData);
+            let result = '';
+            result += '<table class="table table-striped table-bordered table-hover">';
+            result += '<thead class="table-dark"><tr><th>No.</th><th>Network</th><th>Game</th><th>Start</th><th>End</th><th>Buy-in</th><th>Name</th><th>Speed</th><th>Alarm</th><th>Hide</th></thead>';
+                result += '<tbody>';
+                reduceData[dataIndex].map((t, i)=> {
+                const {$} = t;
+                const speed = $.filterString.split(";")
+                const start = new Date(parseInt($?.scheduledStartDate));
+                const startTime = `${start?.getHours() + ':'+ start?.getMinutes()}`;
+                const end = new Date(parseInt($?.lateRegEndDate));
+                const endTime = `${end?.getHours() + ':'+ end?.getMinutes()}`
+                    result += '<tr>';
+                    result += '<td>' + (i+1) + '</td>';
+                    result += '<td>' + $?.network + '</td>';
+                    result += '<td>' + $?.game + '</td>';
+                    result += '<td>' + startTime + '</td>';
+                    result += '<td>' + endTime + '</td>';
+                    result += '<td>' + '$' + parseInt($.rake) + parseInt($.stake) + '</td>';
+                    result += '<td>' + $?.name + '</td>';
+                    result += '<td>' + speed[1] + '</td>';
+                    result += '<td>' + 'icon' + '</td>';
+                    result += '<td onClick="saveToStorage(event,'+' '+ $.id +')">' + 'icon' +  '</td>';
+                    result += '</tr>';
+            });
+            
+            result += '</tbody>';
+            result += '</table>';
+            $('.table-board').html(result);
+        }
+
+        const searcFilter = (e) => {
+            e.preventDefault();
+            const data = tournamentTable.filter((s)=> {
+                const {$} = s;
+                if($.name.indexOf(searchValue) > -1){
+                    return $.name;
+                }
+            });
+            tournamentTableCopy = data;
+            makeTable();
+        }
+
+        const nextPage = (e) => {
+                e.preventDefault();
+                if(dataIndex == 0){
+                    dataIndex = reduceData.length;
+                    renderPage();
+                }else if(dataIndex > reduceData.length){
+                    dataIndex = 0;
+                    renderPage();
+                }else {
+                    dataIndex += 1;
+                    renderPage();
+                }
+        }
+
+        const prevPage = (e) => {
+            e.preventDefault();
+            if(dataIndex == 0){
+                dataIndex = reduceData.length;
+                renderPage();
+            }else if(dataIndex > reduceData.length){
+                dataIndex = 0;
+                renderPage();
+            }else {
+                dataIndex -= 1;
+                renderPage();
+            }
+        }
+
+        const openSpeed = (e) => {
+            e.preventDefault();
+            $('.speed-check').toggle();
+        };
+
+        const openRange = (e) => {
+            e.preventDefault();
+            $('.open-range').toggle();
+        };
+
+        const openBuy = (e) => {
+            e.preventDefault();
+            $('.open-buy').toggle();
+        };
+
+        const openGame = (e) => {
+            e.preventDefault();
+            $('.open-game').toggle();
+        };
+
+        const handleSpeed = (e) => {
+            e.preventDefault();
+            const { value } = e.target;
+            if(selectedSpeed.includes(value) !== true){
+                selectedSpeed = [...selectedSpeed, value];
+                console.log(selectedSpeed);
+            }else{
+                const result = selectedSpeed.filter((d)=> d !== value);
+                selectedSpeed = result;
+                console.log(selectedSpeed);
+            }
+        }
+
+        const handleRange = (e) => {
+            e.preventDefault();
+            const { value } = e.target;
+            const result = value.split("-");
+            if(selectedRangeData.length > 0){
+                //compare two array and return value that exist
+                const compare = selectedRangeData.filter((a)=> {
+                    return result.some((b)=>{
+                        return a === b;
+                    })
+                });
+                //check if array value that exist is greater than zero
+                if(compare.length > 0 ){
+                //filter array that exist on second check
+                const newResult = selectedRangeData.filter((d)=>{
+                    return !compare.some((c)=>{
+                        return d === c;
+                    })
+                });
+                //filter array that exist on second check
+                selectedRangeData = [...newResult];
+                }else {
+                    selectedRangeData = [...selectedRangeData, ...result];
+                }
+            }else {
+                selectedRangeData = [...selectedRangeData, ...value.split("-")];
+            }
+        }
+
+        const handleBuy = (e) => {
+            e.preventDefault();
+            const { value } = e.target;
+            const result = value.split("-");
+            if(selectedBuyData.length > 0){
+                //compare two array and return value that exist
+                const compare = selectedBuyData.filter((a)=> {
+                    return result.some((b)=>{
+                        return a === b;
+                    })
+                });
+                //check if array value that exist is greater than zero
+                if(compare.length > 0 ){
+                //filter array that exist on second check
+                const newResult = selectedBuyData.filter((d)=>{
+                    return !compare.some((c)=>{
+                        return d === c;
+                    })
+                });
+                //filter array that exist on second check
+                selectedBuyData = [...newResult];
+                }else {
+                    selectedBuyData = [...selectedBuyData, ...result];
+                }
+            }else {
+                selectedBuyData = [...selectedBuyData, ...value.split("-")];
+            }
+        }
+
+        const submitRange = (e) => {
+            e.preventDefault();
+            const result = selectedRangeData.toString();
+            const data = tournamentTable.filter((s)=> {
+                const {$} = s;
+                const range = $.playersPerTable;
+                const playerNumber = parseInt(range);
+                return selectedRangeData.some((d)=> {
+                    const selectedNumber = parseInt(d);
+                    return playerNumber <= selectedNumber;
+                })
+            });
+            tournamentTableCopy = data;
+            makeTable();
+            $('.open-range').toggle();
+        }
+
+        const submitBuy = (e) => {
+            e.preventDefault();
+            const result = selectedBuyData.toString();
+            const data = tournamentTableCopy.filter((s)=> {
+                const {$} = s;
+                const buy = parseInt($.rake) + parseInt($.stake);
+                return !selectedBuyData.some((d)=> {
+                    const selectedNumber = parseInt(d);
+                    return selectedNumber <= buy;
+                })
+            });
+            tournamentTableCopy = data;
+            makeTable();
+            $('.open-buy').toggle();
+        }
+
+        const submitSpeed = (e) => {
+            e.preventDefault();
+            const result = "Type:" + selectedSpeed.toString();
+            const data = tournamentTable.filter((s)=> {
+                const {$} = s;
+                const speed = $.filterString.split(";");
+                if(speed[1].indexOf(result) > -1){
+                    return speed[1];
+                }
+            });
+            console.log(data);
+            tournamentTableCopy = data;
+            makeTable();
+            $('.form-checker').toggle();
+        }
+
+
+            const selectPage = (n) => {
+                dataIndex = n;
+                renderPage();
+            }
+
+
+        const makeTable = () => {
+           const sliceIntoChunks = (arr, chunkSize) => {
+                const res = [];
+                for (let i = 0; i < arr.length; i += chunkSize) {
+                    const chunk = arr.slice(i, i + chunkSize);
+                    res.push(chunk);
+                }
+                return res;
+            }
+
+            reduceData = sliceIntoChunks(tournamentTableCopy, 50);
+            renderPage();
+        }
+    
+    </script>
+</body>
+</html>
