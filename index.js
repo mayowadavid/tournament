@@ -25,8 +25,5 @@ app.get('/tournament', async (req, res) => {
             });
 })
 
-const port = 4000
 
-app.listen(port, () => {
-    console.log(`server is running on port ${port}`);
-});
+app.listen(process.env.PORT || 4000, () => console.log('Node server listening on port 4242!'));
