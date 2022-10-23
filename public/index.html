@@ -19,7 +19,7 @@
                     </ul>
                 </div>
                 <div class="form-box">
-                    <h2>Alarm</h2>
+                    <div class="top_header"><div class="row_h"><h2>Alarm</h2></div> <div onClick="openAlarm(event)" class="row_h cancel"><img src="img/close-button.svg" alt=""></div></div>
                     <form id="task-form" action="index.html">
                     <div class="full-width"><label for="title">Task title:</label><input type="text" id="title" required></div>
                     <div class="half-width"><label for="deadline-hours">Hours (hh):</label><input type="number" id="deadline-hours" required></div>
@@ -51,7 +51,7 @@
                 </div>
             </div>
         </div>
-    <div class="alarm_pop_background"></div>
+    <div onClick="openAlarm(event)" class="alarm_pop_background"></div>
     <div class="normal_body">
         <div class="flex_row filters column">
             <div class="search_col flex_row">
@@ -250,7 +250,7 @@
                     result += '<td>' + '$' + parseInt($.rake) + parseInt($.stake) + '</td>';
                     result += '<td>' + $?.name + '</td>';
                     result += '<td>' + speed[1] + '</td>';
-                    result += '<td onClick="askNotificationPermission()">' + 'alarm' + '</td>';
+                    result += '<td onClick="openAlarm(event)">' + 'alarm' + '</td>';
                     result += '<td onClick="saveToStorage(event)" id="' + $.id + '">' + 'icon' +  '</td>';
                     result += '</tr>';
             });
@@ -303,6 +303,12 @@
         const openSpeed = (e) => {
             e.preventDefault();
             $('.speed-check').toggle();
+        };
+
+        const openAlarm = (e) => {
+            e.preventDefault();
+            $('.alarm_pop_background').toggle();
+            $('.alarm_pop_wrap').toggle();
         };
 
         const openRange = (e) => {

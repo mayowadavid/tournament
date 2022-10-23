@@ -209,6 +209,26 @@ header h2 {
     -moz-appearance: none;
 }
 
+.top_header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.row_h {
+  width: 50%;
+}
+
+.cancel {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-right: 20px;
+}
+
+.cancel > img {
+  width: 40px;
+}
+
 .alarm_pop_wrap {
     display: none;
     position: absolute;
