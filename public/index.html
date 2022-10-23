@@ -12,43 +12,92 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
-    <div class="flex_row filters column">
-        <div class="search_col flex_row">
-            <div class="form-group">
-                <input type="text" class="form-control" onchange="handleChange(event)" id="search" placeholder="search...">
-            </div>
-              <button onclick="searcFilter(event)">Search</button>
-        </div>
-        <div class="speed_filter form-select">
-            <p onclick="openSpeed(event)">choose Speed</p>
-            <div class="speed-check form-checker form-chk select-option" name="" id="">
+        <div class="alarm_pop_wrap">
+            <div class="alarm_pop">
+                <div class="task-box">
+                    <ul id="task-list">
+                    </ul>
+                </div>
+                <div class="form-box">
+                    <h2>Alarm</h2>
+                    <form id="task-form" action="index.html">
+                    <div class="full-width"><label for="title">Task title:</label><input type="text" id="title" required></div>
+                    <div class="half-width"><label for="deadline-hours">Hours (hh):</label><input type="number" id="deadline-hours" required></div>
+                    <div class="half-width"><label for="deadline-minutes">Mins (mm):</label><input type="number" id="deadline-minutes" required></div>
+                    <div class="third-width"><label for="deadline-day">Day:</label>
+                            <select id="deadline-day" required>
+                            
+                            </select></div>
+                    
+                    <div class="third-width"><label for="deadline-month">Month:</label>
+                        <select id="deadline-month" required>
+                        </select></div>
+                    
+                    <div class="third-width"><label for="deadline-year">Year:</label>
+                        <select id="deadline-year" required>
+                        </select></div>
+                    
+                    <div><input type="submit" id="submit" value="Add Task"></div>
+                    <div></div>
+                    </form>
+                </div>
+                <div id="toolbar">
+                <ul id="notifications">
                 
+                </ul>
+                <button id="enable">
+                    Enable notifications
+                </button>
+                </div>
             </div>
         </div>
-        <div class="range_filter form-select">
-            <p onclick="openRange(event)">choose players</p>
-            <div class="range-checker open-range form-chk select-option" name="" id="">
-                
+    <div class="alarm_pop_background"></div>
+    <div class="normal_body">
+        <div class="flex_row filters column">
+            <div class="search_col flex_row">
+                <div class="form-group">
+                    <input type="text" class="form-control" onchange="handleChange(event)" id="search" placeholder="search...">
+                </div>
+                  <button onclick="searcFilter(event)">Search</button>
+            </div>
+            <div class="speed_filter form-select">
+                <p onclick="openSpeed(event)">choose Speed</p>
+                <div class="speed-check form-checker form-chk select-option" name="" id="">
+                    
+                </div>
+            </div>
+            <div class="range_filter form-select">
+                <p onclick="openRange(event)">choose players</p>
+                <div class="range-checker open-range form-chk select-option" name="" id="">
+                    
+                </div>
+            </div>
+            <div class="range_filter form-select">
+                <p onclick="openBuy(event)">choose Buyin</p>
+                <div class="open-buy form-chk select-option" name="" id="">
+                    
+                </div>
+            </div>
+            <div class="range_filter form-select">
+                <p onclick="openGame(event)">choose Game</p>
+                <div class="open-game form-chk select-option" name="" id="">
+                    
+                </div>
             </div>
         </div>
-        <div class="range_filter form-select">
-            <p onclick="openBuy(event)">choose Buyin</p>
-            <div class="open-buy form-chk select-option" name="" id="">
-                
-            </div>
-        </div>
-        <div class="range_filter form-select">
-            <p onclick="openGame(event)">choose Game</p>
-            <div class="open-game form-chk select-option" name="" id="">
-                
-            </div>
-        </div>
+        <div class="paginate-select column"></div>
+        <div class="column table-board table-responsive"></div>
+        <div class="paginate-select column"></div>
     </div>
-    <div class="paginate-select column"></div>
-    <div class="column table-board table-responsive"></div>
-    <div class="paginate-select column"></div>
-    <script>
     
+    
+    
+    <script>
+        let dates = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", 
+        "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31"];
+
+        const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        let years = ['2025', '2024', '2023', '2022', '2021', '2020', '2019', '2018'];
         let tournamentTable = [];
         let tournamentTableCopy = [];
         let dataIndex = 0;
@@ -62,6 +111,8 @@
         let selectedSpeed = [];
         let searchValue = '';
         let storageData = [];
+        let minPrice;
+        let maxPrice;
 
         const handleChange = (e) => {
             e.preventDefault();
@@ -75,35 +126,67 @@
                         return result.json();
                     }).then((data)=>{ 
                         const {RegisteringTournament} = data.Response.RegisteringTournamentsResponse[0].RegisteringTournaments[0];
+                        storageData = localStorage.getItem('storage');
+                        storageData= storageData !== null ? JSON?.parse(storageData): [];
                         tournamentTable = [...RegisteringTournament];
-                        tournamentTableCopy = tournamentTable;
+
+                        tournamentTableCopy = storageData !== null ? [...tournamentTable.filter((d)=>{
+                            const {$} = d;
+                            return !storageData.some((s)=> {
+                                return $.id == s.id;
+                            })
+                        })] : [...tournamentTable];
                         makeTable();
                 });
         }
         fire();
 
-        const saveToStorage = (e, d) => {
+        const saveToStorage = (e) => {
             e.preventDefault();
-            storageData = [...storageData, {id: d}];
-            const data = tournamentTable.filter((s)=> {
+            const {id} = e.target;
+            storageData = [...storageData, {id: id}];
+            localStorage.setItem('storage', JSON.stringify(storageData));
+            const data = tournamentTableCopy.filter((s)=> {
                 const {$} = s;
-                return $.id !== d;
+                return $.id !== id;
             });
             tournamentTableCopy = data;
             makeTable();
         }
 
         const renderPage = () => {
+            let dateRow = '';
+            let monthRow = '';
+            let yearsRow = '';
             let speedRow = '';
             let rangeRow = '';
             let buyRow = '';
             let gameRow = '';
+
+            dates.map((d)=>{
+                dateRow += '<option value="'+ d +'">'+ d +'</option>';
+            });
+
+            $('#deadline-day').html(dateRow);
+
+            years.map((y)=>{
+                yearsRow += '<option value="'+ y +'">'+ y +'</option>';
+            });
+
+            $('#deadline-year').html(yearsRow);
+
+            MONTHS.map((m)=>{
+                monthRow += '<option value="'+ m +'">'+ m +'</option>';
+            });
+
+            $('#deadline-month').html(monthRow);
 
             allSpeed.map((s)=> {
                 speedRow += '<div class="form-check">'
                 speedRow +=  '<input onChange="handleSpeed(event)" class="form-check-input" type="checkbox" value="'+ s +'" id="flexCheckDefault">';
                 speedRow +=  '<label class="form-check-label" for="defaultCheck1">' + s + '</label> </div>';
             });
+
             speedRow += '<div class="submit_button"><button onclick="submitSpeed(event)">Done</button></div>';
             
             $('.speed-check').html(speedRow);
@@ -121,6 +204,10 @@
                 buyRow +=  '<input onChange="handleBuy(event)" class="form-check-input" type="checkbox" value="'+ r +'" id="'+ r +'">';
                 buyRow +=  '<label class="form-check-label" for="defaultCheck1">'+ '$' + r + '</label> </div>';
             });
+            buyRow += '<header><h2>Custom Range</h2></header><div class="price-input"><div class="field"><span>Min</span><input onChange="handleRangeChange(event)" type="number" class="input-min" value="250"></div>';
+            buyRow +=  '<div class="separator">-</div><div class="field"><span>Max</span><input onChange="handleRangeChange(event)" type="number" class="input-max" value="750"></div></div></div>';
+            buyRow += '<div class="slider"><div class="progress"></div></div><div class="range-input"><input onChange="handleRangeChange(event)" type="range" class="range-min" min="0" max="1000" value="250" step="5">';
+            buyRow +=  '<input onChange="handleRangeChange(event)" type="range" class="range-max" min="0" max="1000" value="750" step="5"></div>';
             buyRow += '<div class="submit_button"><button onclick="submitBuy(event)">Done</button></div>';
             $('.open-buy').html(buyRow);
 
@@ -143,7 +230,6 @@
             pagination += '<li class="page-item"><a href="#" onClick="nextPage(event)" class="page-link">Next</a></li>';
             pagination += '</ul></nav>';
             $('.paginate-select').html(pagination);
-            console.log(reduceData);
             let result = '';
             result += '<table class="table table-striped table-bordered table-hover">';
             result += '<thead class="table-dark"><tr><th>No.</th><th>Network</th><th>Game</th><th>Start</th><th>End</th><th>Buy-in</th><th>Name</th><th>Speed</th><th>Alarm</th><th>Hide</th></thead>';
@@ -164,8 +250,8 @@
                     result += '<td>' + '$' + parseInt($.rake) + parseInt($.stake) + '</td>';
                     result += '<td>' + $?.name + '</td>';
                     result += '<td>' + speed[1] + '</td>';
-                    result += '<td>' + 'icon' + '</td>';
-                    result += '<td onClick="saveToStorage(event,'+' '+ $.id +')">' + 'icon' +  '</td>';
+                    result += '<td onClick="askNotificationPermission()">' + 'alarm' + '</td>';
+                    result += '<td onClick="saveToStorage(event)" id="' + $.id + '">' + 'icon' +  '</td>';
                     result += '</tr>';
             });
             
@@ -178,7 +264,7 @@
             e.preventDefault();
             const data = tournamentTable.filter((s)=> {
                 const {$} = s;
-                if($.name.indexOf(searchValue) > -1){
+                if($.name.toLowerCase().indexOf(searchValue.toLowerCase()) > -1){
                     return $.name;
                 }
             });
@@ -324,18 +410,31 @@
 
         const submitBuy = (e) => {
             e.preventDefault();
-            const result = selectedBuyData.toString();
-            const data = tournamentTableCopy.filter((s)=> {
+            console.log(minPrice, maxPrice)
+            if((minPrice !== undefined) && (maxPrice !== undefined)){
+                const data = tournamentTable.filter((s)=> {
+                const {$} = s;
+                const buy = parseInt($.rake) + parseInt($.stake);
+                return (buy == minPrice) && (buy <= maxPrice);
+                });
+                tournamentTableCopy = data;
+                makeTable();
+                $('.open-buy').toggle();
+            }else {
+                const result = selectedBuyData.toString();
+                const data = tournamentTable.filter((s)=> {
                 const {$} = s;
                 const buy = parseInt($.rake) + parseInt($.stake);
                 return !selectedBuyData.some((d)=> {
                     const selectedNumber = parseInt(d);
                     return selectedNumber <= buy;
                 })
-            });
-            tournamentTableCopy = data;
-            makeTable();
-            $('.open-buy').toggle();
+                });
+                tournamentTableCopy = data;
+                makeTable();
+                $('.open-buy').toggle();
+            }
+            
         }
 
         const submitSpeed = (e) => {
@@ -369,12 +468,415 @@
                     res.push(chunk);
                 }
                 return res;
-            }
-
+            } 
             reduceData = sliceIntoChunks(tournamentTableCopy, 50);
+            console.log(reduceData);
             renderPage();
         }
-    
+
+        
+        const handleRangeChange = (e) => {
+            e.preventDefault();
+            const rangeInput = document.querySelectorAll(".range-input input"),
+            priceInput = document.querySelectorAll(".price-input input"),
+            range = document.querySelector(".slider .progress");
+            let priceGap = 5;
+            priceInput.forEach(input =>{
+            input.addEventListener("input", e =>{
+                minPrice = parseInt(priceInput[0].value),
+                maxPrice = parseInt(priceInput[1].value);
+                
+                if((maxPrice - minPrice >= priceGap) && maxPrice <= rangeInput[1].max){
+                    if(e.target.className === "input-min"){
+                        rangeInput[0].value = minPrice;
+                        range.style.left = ((minPrice / rangeInput[0].max) * 100) + "%";
+                    }else{
+                        rangeInput[1].value = maxPrice;
+                        range.style.right = 100 - (maxPrice / rangeInput[1].max) * 100 + "%";
+                    }
+                }
+            });
+        });
+
+        rangeInput.forEach(input =>{
+            input.addEventListener("input", e =>{
+                let minVal = parseInt(rangeInput[0].value),
+                maxVal = parseInt(rangeInput[1].value);
+
+                if((maxVal - minVal) < priceGap){
+                    if(e.target.className === "range-min"){
+                        rangeInput[0].value = maxVal - priceGap;
+                        maxPrice = maxVal - priceGap;
+                    }else{
+                        rangeInput[1].value = minVal + priceGap;
+                        minPrice = minVal + priceGap;
+                    }
+                }else{
+                    priceInput[0].value = minVal;
+                    minPrice = minVal;
+                    priceInput[1].value = maxVal;
+                    maxPrice = maxVal;
+                    range.style.left = ((minVal / rangeInput[0].max) * 100) + "%";
+                    range.style.right = 100 - (maxVal / rangeInput[1].max) * 100 + "%";
+                }
+            });
+        });
+        }
+
+       
+
+        
+
+        // Hold an instance of a db object for us to store the IndexedDB data in
+        let db;
+
+        // Create a reference to the notifications list in the bottom of the app; we will write database messages into this list by
+        // appending list items as children of this element
+        const note = document.getElementById('notifications');
+
+        // All other UI elements we need for the app
+        const taskList = document.getElementById('task-list');
+        const taskForm = document.getElementById('task-form');
+        const title = document.getElementById('title');
+        const hours = document.getElementById('deadline-hours');
+        const minutes = document.getElementById('deadline-minutes');
+        const day = document.getElementById('deadline-day');
+        const month = document.getElementById('deadline-month');
+        const year = document.getElementById('deadline-year');
+        const notificationBtn = document.getElementById('enable');
+
+        // Do an initial check to see what the notification permission state is
+        if (Notification.permission === 'denied' || Notification.permission === 'default') {
+            notificationBtn.style.display = 'block';
+        } else {
+            notificationBtn.style.display = 'none';
+        }
+
+        note.appendChild(createListItem('App initialised.'));
+
+        // Let us open our database
+        const DBOpenRequest = window.indexedDB.open('toDoList', 4);
+
+        // Register two event handlers to act on the database being opened successfully, or not
+        DBOpenRequest.onerror = (event) => {
+            note.appendChild(createListItem('Error loading database.'));
+        };
+
+        DBOpenRequest.onsuccess = (event) => {
+            note.appendChild(createListItem('Database initialised.'));
+
+            // Store the result of opening the database in the db variable. This is used a lot below
+            db = DBOpenRequest.result;
+
+            // Run the displayData() function to populate the task list with all the to-do list data already in the IndexedDB
+            displayData();
+        };
+
+        // This event handles the event whereby a new version of the database needs to be created
+        // Either one has not been created before, or a new version number has been submitted via the
+        // window.indexedDB.open line above
+        //it is only implemented in recent browsers
+        DBOpenRequest.onupgradeneeded = (event) => {
+            db = event.target.result;
+
+            db.onerror = (event) => {
+            note.appendChild(createListItem('Error loading database.'));
+            };
+
+            // Create an objectStore for this database
+            const objectStore = db.createObjectStore('toDoList', { keyPath: 'taskTitle' });
+
+            // Define what data items the objectStore will contain
+            objectStore.createIndex('hours', 'hours', { unique: false });
+            objectStore.createIndex('minutes', 'minutes', { unique: false });
+            objectStore.createIndex('day', 'day', { unique: false });
+            objectStore.createIndex('month', 'month', { unique: false });
+            objectStore.createIndex('year', 'year', { unique: false });
+
+            objectStore.createIndex('notified', 'notified', { unique: false });
+
+            note.appendChild(createListItem('Object store created.'));
+        };
+
+        function displayData() {
+            // First clear the content of the task list so that you don't get a huge long list of duplicate stuff each time
+            // the display is updated.
+            while (taskList.firstChild) {
+            taskList.removeChild(taskList.lastChild);
+            }
+
+            // Open our object store and then get a cursor list of all the different data items in the IDB to iterate through
+            const objectStore = db.transaction('toDoList').objectStore('toDoList');
+            objectStore.openCursor().onsuccess = (event) => {
+            const cursor = event.target.result;
+            // Check if there are no (more) cursor items to iterate through
+            if (!cursor) {
+                // No more items to iterate through, we quit.
+                note.appendChild(createListItem('Entries all displayed.'));
+                return;
+            }
+            
+            // Check which suffix the deadline day of the month needs
+            const { hours, minutes, day, month, year, notified, taskTitle } = cursor.value;
+            const ordDay = ordinal(day);
+
+            // Build the to-do list entry and put it into the list item.
+            const toDoText = `${taskTitle} — ${hours}:${minutes}, ${month} ${ordDay} ${year}.`;
+            const listItem = createListItem(toDoText);
+
+            if (notified === 'yes') {
+                listItem.style.textDecoration = 'line-through';
+                listItem.style.color = 'rgba(255, 0, 0, 0.5)';
+            }
+
+            // Put the item item inside the task list
+            taskList.appendChild(listItem);
+
+            // Create a delete button inside each list item,
+            const deleteButton = document.createElement('button');
+            listItem.appendChild(deleteButton);
+            deleteButton.textContent = 'X';
+            
+            // Set a data attribute on our delete button to associate the task it relates to.
+            deleteButton.setAttribute('data-task', taskTitle);
+            
+            // Associate action (deletion) when clicked
+            deleteButton.onclick = (event) => {
+                deleteItem(event);
+            };
+
+            // continue on to the next item in the cursor
+            cursor.continue();
+            };
+        };
+
+        // Add listener for clicking the submit button
+        taskForm.addEventListener('submit', addData, false);
+
+        function addData(e) {
+            // Prevent default, as we don't want the form to submit in the conventional way
+            e.preventDefault();
+
+            // Stop the form submitting if any values are left empty.
+            // This should never happen as there is the required attribute
+            if (title.value === '' || hours.value === null || minutes.value === null || day.value === '' || month.value === '' || year.value === null) {
+            note.appendChild(createListItem('Data not submitted — form incomplete.'));
+            return;
+            }
+            
+            // Grab the values entered into the form fields and store them in an object ready for being inserted into the IndexedDB
+            const newItem = [
+            { taskTitle: title.value, hours: hours.value, minutes: minutes.value, day: day.value, month: month.value, year: year.value, notified: 'no' },
+            ];
+
+            // Open a read/write DB transaction, ready for adding the data
+            const transaction = db.transaction(['toDoList'], 'readwrite');
+
+            // Report on the success of the transaction completing, when everything is done
+            transaction.oncomplete = () => {
+            note.appendChild(createListItem('Transaction completed: database modification finished.'));
+
+            // Update the display of data to show the newly added item, by running displayData() again.
+            displayData();
+            };
+
+            // Handler for any unexpected error
+            transaction.onerror = () => {
+            note.appendChild(createListItem(`Transaction not opened due to error: ${transaction.error}`));
+            };
+
+            // Call an object store that's already been added to the database
+            const objectStore = transaction.objectStore('toDoList');
+            console.log(objectStore.indexNames);
+            console.log(objectStore.keyPath);
+            console.log(objectStore.name);
+            console.log(objectStore.transaction);
+            console.log(objectStore.autoIncrement);
+
+            // Make a request to add our newItem object to the object store
+            const objectStoreRequest = objectStore.add(newItem[0]);
+            objectStoreRequest.onsuccess = (event) => {
+
+            // Report the success of our request
+            // (to detect whether it has been succesfully
+            // added to the database, you'd look at transaction.oncomplete)
+            note.appendChild(createListItem('Request successful.'));
+
+            // Clear the form, ready for adding the next entry
+            title.value = '';
+            hours.value = null;
+            minutes.value = null;
+            day.value = 01;
+            month.value = 'January';
+            year.value = 2020;
+            };
+        };
+
+        function deleteItem(event) {
+            // Retrieve the name of the task we want to delete
+            const dataTask = event.target.getAttribute('data-task');
+
+            // Open a database transaction and delete the task, finding it by the name we retrieved above
+            const transaction = db.transaction(['toDoList'], 'readwrite');
+            transaction.objectStore('toDoList').delete(dataTask);
+
+            // Report that the data item has been deleted
+            transaction.oncomplete = () => {
+            // Delete the parent of the button, which is the list item, so it is no longer displayed
+            event.target.parentNode.parentNode.removeChild(event.target.parentNode);
+            note.appendChild(createListItem(`Task "${dataTask}" deleted.`));
+            };
+        };
+
+        // Check whether the deadline for each task is up or not, and responds appropriately
+        function checkDeadlines() {
+            // First of all check whether notifications are enabled or denied
+            if (Notification.permission === 'denied' || Notification.permission === 'default') {
+            notificationBtn.style.display = 'block';
+            } else {
+            notificationBtn.style.display = 'none';
+            }
+
+            // Grab the current time and date
+            const now = new Date();
+
+            // From the now variable, store the current minutes, hours, day of the month, month, year and seconds
+            const minuteCheck = now.getMinutes();
+            const hourCheck = now.getHours();
+            const dayCheck = now.getDate(); // Do not use getDay() that returns the day of the week, 1 to 7
+            const monthCheck = now.getMonth();
+            const yearCheck = now.getFullYear(); // Do not use getYear() that is deprecated.
+
+            // Open a new transaction
+            const objectStore = db.transaction(['toDoList'], 'readwrite').objectStore('toDoList');
+            
+            // Open a cursor to iterate through all the data items in the IndexedDB
+            objectStore.openCursor().onsuccess = (event) => {
+            const cursor = event.target.result;
+            if (!cursor) return;
+            const { hours, minutes, day, month, year, notified, taskTitle } = cursor.value;
+
+            // convert the month names we have installed in the IDB into a month number that JavaScript will understand.
+            // The JavaScript date object creates month values as a number between 0 and 11.
+            const monthNumber = MONTHS.indexOf(month);
+            if (monthNumber === -1) throw new Error('Incorrect month entered in database.');
+
+            // Check if the current hours, minutes, day, month and year values match the stored values for each task.
+            // The parseInt() function transforms the value from a string to a number for comparison
+            // (taking care of leading zeros, and removing spaces and underscores from the string).
+            let matched = parseInt(hours) === hourCheck;
+            matched &&= parseInt(minutes) === minuteCheck;
+            matched &&= parseInt(day) === dayCheck;
+            matched &&= parseInt(monthNumber) === monthCheck;
+            matched &&= parseInt(year) === yearCheck;
+            if (matched && notified === 'no') {
+                // If the numbers all do match, run the createNotification() function to create a system notification
+                // but only if the permission is set
+                if (Notification.permission === 'granted') {
+                createNotification(taskTitle);
+                }
+            }
+
+            // Move on to the next cursor item
+            cursor.continue();
+            };
+        };
+
+        // Ask for permission when the 'Enable notifications' button is clicked
+        function askNotificationPermission() {
+            // Function to actually ask the permissions
+            function handlePermission(permission) {
+            // Whatever the user answers, we make sure Chrome stores the information
+            if (!Reflect.has(Notification, 'permission')) {
+                Notification.permission = permission;
+            }
+
+            // Set the button to shown or hidden, depending on what the user answers
+            if (Notification.permission === 'denied' || Notification.permission === 'default') {
+                notificationBtn.style.display = 'block';
+            } else {
+                notificationBtn.style.display = 'none';
+            }
+            };
+
+            // Check if the browser supports notifications
+            if (!Reflect.has(window, 'Notification')) {
+            console.log('This browser does not support notifications.');
+            } else {
+            if (checkNotificationPromise()) {
+                Notification.requestPermission().then(handlePermission);
+            } else {
+                Notification.requestPermission(handlePermission);
+            }
+            }
+        };
+
+        // Check whether browser supports the promise version of requestPermission()
+        // Safari only supports the old callback-based version
+        function checkNotificationPromise() {
+            try {
+            Notification.requestPermission().then();
+            } catch(e) {
+            return false;
+            }
+
+            return true;
+        };
+
+        // Wire up notification permission functionality to 'Enable notifications' button
+        notificationBtn.addEventListener('click', askNotificationPermission);
+
+        function createListItem(contents) {
+            const listItem = document.createElement('li');
+            listItem.textContent = contents;
+            return listItem;
+        };
+
+        // Create a notification with the given title
+        function createNotification(title) {
+            // Create and show the notification
+            const img = '/to-do-notifications/img/icon-128.png';
+            const text = `HEY! Your task "${title}" is now overdue.`;
+            const notification = new Notification('To do list', { body: text, icon: img });
+
+            // We need to update the value of notified to 'yes' in this particular data object, so the
+            // notification won't be set off on it again
+
+            // First open up a transaction
+            const objectStore = db.transaction(['toDoList'], 'readwrite').objectStore('toDoList');
+
+            // Get the to-do list object that has this title as its title
+            const objectStoreTitleRequest = objectStore.get(title);
+
+            objectStoreTitleRequest.onsuccess = () => {
+            // Grab the data object returned as the result
+            const data = objectStoreTitleRequest.result;
+
+            // Update the notified value in the object to 'yes'
+            data.notified = 'yes';
+
+            // Create another request that inserts the item back into the database
+            const updateTitleRequest = objectStore.put(data);
+
+            // When this new request succeeds, run the displayData() function again to update the display
+            updateTitleRequest.onsuccess = () => {
+                displayData();
+            };
+            };
+        };
+
+        // Using a setInterval to run the checkDeadlines() function every second
+        setInterval(checkDeadlines, 1000);
+
+        // Helper function returning the day of the month followed by an ordinal (st, nd, or rd)
+        function ordinal(day) {
+        const n = day.toString();
+        const last = n.slice(-1);
+        if (last === '1' && n !== '11') return `${n}st`;
+        if (last === '2' && n !== '12') return `${n}nd`;
+        if (last === '3' && n !== '13') return `${n}rd`;
+        return `${n}th`;
+        };
     </script>
 </body>
 </html>
