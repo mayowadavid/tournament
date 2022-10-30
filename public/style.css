@@ -75,6 +75,16 @@ button {
     transition: .15s ease-in-outbox-shadow .15s ease-in-out;
 }
 
+td {
+  text-align: center;
+}
+
+td > img {
+  width: 100%;
+  object-fit: contain;
+  height: 20px;
+}
+
 .form-chk {
     display: none;
     width: 200px;

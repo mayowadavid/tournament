@@ -13,13 +13,13 @@
 </head>
 <body>
         <div class="alarm_pop_wrap">
-            <div class="alarm_pop">
+            <div class="alarm_pop m10">
                 <div class="task-box">
                     <ul id="task-list">
                     </ul>
                 </div>
                 <div class="form-box">
-                    <div class="top_header"><div class="row_h"><h2>Alarm</h2></div> <div onClick="openAlarm(event)" class="row_h cancel"><img src="img/close-button.svg" alt=""></div></div>
+                    <div class="top_header"><div class="row_h"><h2>Alarm</h2></div> <div onClick="openAlarm(event)" class="row_h cancel"><img src="img/close_small.svg" alt=""></div></div>
                     <form id="task-form" action="index.html">
                     <div class="full-width"><label for="title">Task title:</label><input type="text" id="title" required></div>
                     <div class="half-width"><label for="deadline-hours">Hours (hh):</label><input type="number" id="deadline-hours" required></div>
@@ -88,6 +88,7 @@
         <div class="paginate-select column"></div>
         <div class="column table-board table-responsive"></div>
         <div class="paginate-select column"></div>
+        <div class="column hidden-table-board table-responsive"></div>
     </div>
     
     
@@ -113,6 +114,7 @@
         let storageData = [];
         let minPrice;
         let maxPrice;
+        let hiddenData = [];
 
         const handleChange = (e) => {
             e.preventDefault();
@@ -130,20 +132,52 @@
                         storageData= storageData !== null ? JSON?.parse(storageData): [];
                         tournamentTable = [...RegisteringTournament];
 
-                        tournamentTableCopy = storageData !== null ? [...tournamentTable.filter((d)=>{
+                        tournamentTableCopy = tournamentTable.filter((n)=>{
+                            const {$} = n;
+                            if($.scheduledStartDate !== undefined || $.lateRegEndDate !== undefined){
+                                return $;
+                            }
+                        })
+
+                        tournamentTableCopy = storageData !== null ? tournamentTableCopy.filter((d)=>{
                             const {$} = d;
                             return !storageData.some((s)=> {
                                 return $.id == s.id;
                             })
-                        })] : [...tournamentTable];
+                        }) : [...tournamentTableCopy];
+
+                        hiddenData = storageData !== null ? tournamentTable.filter((d)=>{
+                            const {$} = d;
+                            return storageData.some((s)=> {
+                                return $.id == s.id;
+                            })
+                        }) : hiddenData;
+                        //console.log(hiddenData);
                         makeTable();
                 });
         }
         fire();
 
-        const saveToStorage = (e) => {
-            e.preventDefault();
-            const {id} = e.target;
+        const saveToStorage = (e, d) => {
+            let {id} = e.target;
+            //console.log(e);
+            if(id.length !== 0){
+                storageData = [...storageData, {id: id}];
+            localStorage.setItem('storage', JSON.stringify(storageData));
+            const data = tournamentTableCopy.filter((s)=> {
+                const {$} = s;
+                return $.id !== id;
+            });
+            tournamentTableCopy = data;
+            hiddenData = storageData !== null ? tournamentTable.filter((d)=>{
+                            const {$} = d;
+                            return storageData.some((s)=> {
+                                return $.id == s.id;
+                            })
+                        }) : hiddenData;
+            makeTable();
+            } else {
+            id = e.path[1].id;
             storageData = [...storageData, {id: id}];
             localStorage.setItem('storage', JSON.stringify(storageData));
             const data = tournamentTableCopy.filter((s)=> {
@@ -151,8 +185,60 @@
                 return $.id !== id;
             });
             tournamentTableCopy = data;
+            hiddenData = storageData !== null ? tournamentTable.filter((d)=>{
+                            const {$} = d;
+                            return storageData.some((s)=> {
+                                return $.id == s.id;
+                            })
+                        }) : hiddenData;
             makeTable();
+            }
+            
         }
+
+        const resetStorage = (e, d) => {
+            let {id} = e.target;
+            //console.log(e);
+            console.log(storageData);
+            if(id.length !== 0){
+                storageData = storageData.filter((r)=> {
+                return r.id !== id;
+            });
+            console.log(storageData);
+            localStorage.setItem('storage', JSON.stringify(storageData));
+            const data = tournamentTable.filter((s)=> {
+                const {$} = s;
+                return $.id == id;
+            });
+            console.log(storageData)
+            tournamentTableCopy = [...tournamentTableCopy, ...data];
+            hiddenData = storageData !== null ? hiddenData.filter((d)=>{
+                            const {$} = d;
+                            return $.id !== id;
+                        }) : hiddenData;
+            makeTable();
+            } else {
+            id = e.path[1].id;
+            storageData = storageData.filter((r)=> {
+                return r.id !== id;
+            });
+            console.log(storageData);
+            localStorage.setItem('storage', JSON.stringify(storageData));
+            const data = tournamentTable.filter((s)=> {
+                const {$} = s;
+                return $.id == id;
+            });
+            console.log(storageData)
+            tournamentTableCopy = [...tournamentTableCopy, ...data];
+            hiddenData = storageData !== null ? hiddenData.filter((d)=>{
+                            const {$} = d;
+                            return $.id !== id;
+                        }) : hiddenData;
+            makeTable();
+            }
+            
+        }
+
 
         const renderPage = () => {
             let dateRow = '';
@@ -225,7 +311,7 @@
 
             pagination += '<li class="page-item"><a href="#" onClick="prevPage(event)" class="page-link">Previous</a></li>';
             reduceData.map((t, i)=> {
-            pagination += '<li class="page-item"><a href="#" onClick="selectPage('+ i +')" class="page-link">'+ i + 1 +'</a></li>';
+            pagination += '<li class="page-item"><a href="#" onClick="selectPage('+ i +')" class="page-link">'+ (i + 1) +'</a></li>';
             });
             pagination += '<li class="page-item"><a href="#" onClick="nextPage(event)" class="page-link">Next</a></li>';
             pagination += '</ul></nav>';
@@ -247,17 +333,48 @@
                     result += '<td>' + $?.game + '</td>';
                     result += '<td>' + startTime + '</td>';
                     result += '<td>' + endTime + '</td>';
-                    result += '<td>' + '$' + parseInt($.rake) + parseInt($.stake) + '</td>';
+                    result += '<td>' + '$' + (parseInt($.rake) + parseInt($.stake)) + '</td>';
                     result += '<td>' + $?.name + '</td>';
                     result += '<td>' + speed[1] + '</td>';
-                    result += '<td onClick="openAlarm(event)">' + 'alarm' + '</td>';
-                    result += '<td onClick="saveToStorage(event)" id="' + $.id + '">' + 'icon' +  '</td>';
+                    result += '<td onClick="openAlarm(event)">' + '<img src="/img/alarm.png" />' + '</td>';
+                    result += '<td onClick="saveToStorage(event)" id="' + $.id + '">' + '<img src="/img/eye.svg" />' + '</td>';
                     result += '</tr>';
             });
             
             result += '</tbody>';
             result += '</table>';
             $('.table-board').html(result);
+            
+
+            let hiddenResult = '';
+            hiddenResult += '<table class="table table-striped table-bordered table-hover">';
+                hiddenResult += '<thead class="table-dark"><tr><th>No.</th><th>Network</th><th>Game</th><th>Start</th><th>End</th><th>Buy-in</th><th>Name</th><th>Speed</th><th>Alarm</th><th>Hide</th></thead>';
+                hiddenResult += '<tbody>';
+                hiddenData.map((t, i)=> {
+                const {$} = t;
+                const speed = $.filterString.split(";")
+                const start = new Date(parseInt($?.scheduledStartDate));
+                const startTime = `${start?.getHours() + ':'+ start?.getMinutes()}`;
+                const end = new Date(parseInt($?.lateRegEndDate));
+                const endTime = `${end?.getHours() + ':'+ end?.getMinutes()}`
+                    hiddenResult += '<tr>';
+                    hiddenResult += '<td>' + (i+1) + '</td>';
+                    hiddenResult += '<td>' + $?.network + '</td>';
+                    hiddenResult += '<td>' + $?.game + '</td>';
+                    hiddenResult += '<td>' + startTime + '</td>';
+                    hiddenResult += '<td>' + endTime + '</td>';
+                    hiddenResult += '<td>' + '$' + (parseInt($.rake) + parseInt($.stake)) + '</td>';
+                    hiddenResult += '<td>' + $?.name + '</td>';
+                    hiddenResult += '<td>' + speed[1] + '</td>';
+                    hiddenResult += '<td>' + '<img onClick="openAlarm(event)" src="/img/alarm.png" />' + '</td>';
+                    hiddenResult += '<td id="' + $.id + '" onClick="resetStorage(event)">' + '<img accessKey="' + $.id + '" onClick="resetStorage(event)" name="' + $.id + '" src="/img/eye-slash.svg" />' + '</td>';
+                    hiddenResult += '</tr>';
+            });
+            
+            hiddenResult += '</tbody>';
+            hiddenResult += '</table>';
+            $('.hidden-table-board').html(hiddenResult);
+            
         }
 
         const searcFilter = (e) => {
@@ -331,11 +448,11 @@
             const { value } = e.target;
             if(selectedSpeed.includes(value) !== true){
                 selectedSpeed = [...selectedSpeed, value];
-                console.log(selectedSpeed);
+                //console.log(selectedSpeed);
             }else{
                 const result = selectedSpeed.filter((d)=> d !== value);
                 selectedSpeed = result;
-                console.log(selectedSpeed);
+                //console.log(selectedSpeed);
             }
         }
 
@@ -416,7 +533,7 @@
 
         const submitBuy = (e) => {
             e.preventDefault();
-            console.log(minPrice, maxPrice)
+            //console.log(minPrice, maxPrice)
             if((minPrice !== undefined) && (maxPrice !== undefined)){
                 const data = tournamentTable.filter((s)=> {
                 const {$} = s;
@@ -453,7 +570,7 @@
                     return speed[1];
                 }
             });
-            console.log(data);
+            //console.log(data);
             tournamentTableCopy = data;
             makeTable();
             $('.form-checker').toggle();
@@ -476,7 +593,7 @@
                 return res;
             } 
             reduceData = sliceIntoChunks(tournamentTableCopy, 50);
-            console.log(reduceData);
+            //console.log(reduceData);
             renderPage();
         }
 
@@ -693,11 +810,11 @@
 
             // Call an object store that's already been added to the database
             const objectStore = transaction.objectStore('toDoList');
-            console.log(objectStore.indexNames);
-            console.log(objectStore.keyPath);
-            console.log(objectStore.name);
-            console.log(objectStore.transaction);
-            console.log(objectStore.autoIncrement);
+            //console.log(objectStore.indexNames);
+            //console.log(objectStore.keyPath);
+            //console.log(objectStore.name);
+            //console.log(objectStore.transaction);
+            //console.log(objectStore.autoIncrement);
 
             // Make a request to add our newItem object to the object store
             const objectStoreRequest = objectStore.add(newItem[0]);
@@ -807,7 +924,7 @@
 
             // Check if the browser supports notifications
             if (!Reflect.has(window, 'Notification')) {
-            console.log('This browser does not support notifications.');
+            //console.log('This browser does not support notifications.');
             } else {
             if (checkNotificationPromise()) {
                 Notification.requestPermission().then(handlePermission);
